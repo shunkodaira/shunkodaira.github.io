@@ -20,6 +20,7 @@ jobs:
     permissions:
       contents: read
       pages: write
+      statuses: write
       id-token: write
     environment:
       name: github-pages
@@ -54,9 +55,33 @@ jobs:
               for asset in ("water-intro.css", "water-intro.js"):
                   Path("site", asset).write_bytes(Path("intro", asset).read_bytes())
           PY
+          if [ -f site/water-intro.js ]; then node --check site/water-intro.js; fi
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
           path: site
       - uses: actions/deploy-pages@v4
         id: deployment
+      - name: Verify the published portfolio
+        run: |
+          for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
+            if curl -fsS "https://shunkodaira.github.io/?build=${GITHUB_SHA}" -o /tmp/portfolio-home.html \
+              && grep -Fq 'class="water-intro"' /tmp/portfolio-home.html \
+              && curl -fsS "https://shunkodaira.github.io/blog/?build=${GITHUB_SHA}" -o /tmp/portfolio-blog.html \
+              && grep -Fq 'Blog |' /tmp/portfolio-blog.html; then
+              exit 0
+            fi
+            sleep 5
+          done
+          exit 1
+      - name: Report published site verification
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          state=failure
+          if [ "$JOB_STATUS" = success ]; then state=success; fi
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f "state=$state" -f "context=Pages / Live site verification" \
+            -f "target_url=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
