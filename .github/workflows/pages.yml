@@ -3,7 +3,7 @@ name: Publish portfolio
 on:
   push:
     branches: [main]
-    paths: [portfolio-static.zip]
+    paths: [portfolio-static.zip, .github/workflows/pages.yml, 'intro/**']
   workflow_dispatch:
 
 permissions:
@@ -31,6 +31,29 @@ jobs:
           unzip -q portfolio-static.zip -d site
           test -s site/index.html
           test -s site/blog/index.html
+      - name: Add the water intro to older site bundles
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          homepage = Path("site/index.html")
+          html = homepage.read_text(encoding="utf-8")
+          if 'class="water-intro"' not in html:
+              html = html.replace(
+                  '</head>',
+                  '<link rel="stylesheet" href="/water-intro.css"><script defer src="/water-intro.js"></script></head>',
+                  1,
+              )
+              html = html.replace(
+                  '<div class="site">',
+                  '<div class="site"><div class="water-intro" aria-hidden="true"><canvas></canvas></div>',
+                  1,
+              )
+              assert 'class="water-intro"' in html
+              homepage.write_text(html, encoding="utf-8")
+              for asset in ("water-intro.css", "water-intro.js"):
+                  Path("site", asset).write_bytes(Path("intro", asset).read_bytes())
+          PY
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:

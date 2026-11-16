@@ -1,0 +1,44 @@
+
+.water-intro {
+  display: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .water-intro {
+    position: fixed;
+    z-index: 100;
+    inset: 0;
+    display: block;
+    pointer-events: none;
+    background: radial-gradient(ellipse at 43% 36%, #182640, var(--bg) 76%);
+    animation: water-intro-reveal 1.65s linear forwards;
+  }
+
+  .water-intro canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .site:focus-within .water-intro {
+    display: none;
+  }
+}
+
+@keyframes water-intro-reveal {
+  0%,
+  73% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+.sidebar .brand::before,
+.sidebar .brand a::before,
+.sidebar .brand a::after {
+  content: none;
+}
